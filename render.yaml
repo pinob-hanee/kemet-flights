@@ -1,15 +1,32 @@
-{
-  "name": "kemet-flights-backend",
-  "env": "node",
-  "buildCommand": "npm install && npx prisma generate && npm run build",
-  "startCommand": "npx prisma db push && node dist/index.js",
-  "envVars": [
-    { "key": "NODE_ENV", "value": "production" },
-    { "key": "DATABASE_URL", "fromDatabase": { "name": "kemet-postgres", "property": "connectionString" } },
-    { "key": "JWT_SECRET", "generateValue": true },
-    { "key": "JWT_REFRESH_SECRET", "generateValue": true },
-    { "key": "DUFFEL_API_KEY", "sync": false },
-    { "key": "DUFFEL_API_VERSION", "value": "v2" },
-    { "key": "ALLOWED_ORIGINS", "sync": false }
-  ]
-}
+services:
+  - type: web
+    name: kemet-flights-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kemet-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DUFFEL_API_KEY
+        sync: false
+      - key: DUFFEL_API_VERSION
+        value: v2
+      - key: ALLOWED_ORIGINS
+        value: https://kemet-flights.vercel.app
+      - key: PORT
+        value: 5000
+
+databases:
+  - name: kemet-postgres
+    databaseName: kemet_db
+    user: kemet
+    plan: free
