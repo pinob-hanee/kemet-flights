@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@200..1000&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-nile text-slate-100 font-sans antialiased overflow-x-hidden selection:bg-gold/30 selection:text-gold;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.02) 0%, transparent 40%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-wide text-sand-light;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  /* Luxury gold button dynamic styles */
+  .btn-gold {
+    @apply relative overflow-hidden bg-gradient-to-r from-gold-dark via-gold to-gold-dark text-nile font-semibold px-6 py-3 rounded-md transition-all duration-300 shadow-gold hover:shadow-gold-hover hover:-translate-y-[2px] active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-gold/50 tracking-wide;
+  }
+  
+  .btn-gold::after {
+    content: '';
+    @apply absolute inset-0 bg-white opacity-0 transition-opacity duration-300;
+  }
+  
+  .btn-gold:hover::after {
+    @apply opacity-10;
+  }
+
+  .btn-outline-gold {
+    @apply border border-gold/60 text-gold hover:text-nile hover:bg-gold font-semibold px-6 py-3 rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold/30;
+  }
+
+  /* Luxury Glassmorphic Panels */
+  .glass-panel {
+    @apply bg-nile-blue/40 backdrop-blur-md border border-gold/15 rounded-xl shadow-glass;
+  }
+
+  .glass-card {
+    @apply bg-gradient-to-br from-nile-light/80 to-nile-blue/50 backdrop-blur-sm border border-gold/10 hover:border-gold/25 rounded-xl shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-gold-hover;
+  }
+
+  /* Luxurious Pharaoh gold glint header text */
+  .text-gold-glint {
+    @apply bg-gradient-to-r from-gold-dark via-gold-glint to-gold text-transparent bg-clip-text font-serif font-semibold;
+  }
+  
+  /* Input base style */
+  .input-luxury {
+    @apply w-full bg-nile border border-gold/20 focus:border-gold rounded-lg px-4 py-2.5 text-sm text-sand-light placeholder-sand-dark/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors duration-200;
+  }
+
+  /* Status badge */
+  .badge-confirmed {
+    @apply text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider;
+  }
+
+  .badge-pending {
+    @apply text-[9px] text-amber-400 bg-amber-950/40 border border-amber-800/60 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider;
+  }
+
+  .badge-cancelled {
+    @apply text-[9px] text-rose-400 bg-rose-950/40 border border-rose-800/60 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider;
+  }
+
+  /* Section divider */
+  .divider-gold {
+    @apply border-t border-gold/10 my-6;
+  }
+
+  /* Scrollbar aesthetics */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-nile-dark;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gold/20 rounded-full hover:bg-gold/45 transition-colors;
+  }
+
+  /* Page transition wrapper */
+  .page-enter {
+    @apply animate-fadeIn;
+  }
+}
+
+/* RTL overrides for Arabic support */
+[dir="rtl"] .font-sans {
+  font-family: 'Cairo', 'Montserrat', sans-serif !important;
+}
+[dir="rtl"] .font-serif {
+  font-family: 'Amiri', 'Playfair Display', serif !important;
+}
+
+/* Pharaoh shimmer effect for decorative elements */
+.shimmer-gold {
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Egyptian hieroglyph decorative divider */
+.divider-pharaoh {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: rgba(212, 175, 55, 0.5);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.divider-pharaoh::before,
+.divider-pharaoh::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.3), transparent);
+}
+
+/* Premium selection highlight */
+::selection {
+  background-color: rgba(212, 175, 55, 0.25);
+  color: #F5D061;
+}

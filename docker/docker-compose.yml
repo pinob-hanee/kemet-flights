@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Relational Database Node
+  postgres:
+    image: postgres:15-alpine
+    container_name: kemet_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: kemet_admin
+      POSTGRES_PASSWORD: PharaohGoldSecure2026
+      POSTGRES_DB: kemet_luxury
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kemet_admin -d kemet_luxury"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kemet_network
+
+  # Redis Cache Engine
+  redis:
+    image: redis:7-alpine
+    container_name: kemet_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - kemet_network
+
+  # Node.js + Express + Prisma API Node
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: kemet_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://kemet_admin:PharaohGoldSecure2026@postgres:5432/kemet_luxury?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=kemet_pharaoh_jwt_luxe_key_gold_sandstone_2026_super_secure_vault
+      - JWT_REFRESH_SECRET=kemet_pharaoh_jwt_luxe_refresh_secret_key_nile_night_2026_safe_vault
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - kemet_network
+
+  # Nginx Reverse Proxy hosting React Static Client Assets
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: kemet_frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - kemet_network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  kemet_network:
+    driver: bridge
