@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { useStore } from '../store/useStore';
 
+// In production (Vercel), VITE_API_URL points to the Render backend
+// In development, Vite proxy rewrites /api/v1 → localhost:5000/api/v1
+const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -14,13 +18,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-logout on 401 (expired or invalid/fake token)
+// Auto-logout on 401 (expired or invalid token)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       const url = error.config?.url || '';
-      // Don't clear token during the auth endpoints themselves
+      // Don't clear token during auth endpoints themselves
       if (!url.includes('/auth/')) {
         useStore.getState().logout();
       }
