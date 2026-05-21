@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { duffelService } from '../services/duffelService';
 import { AppError } from '../middlewares/errorHandler';
+import { prisma } from '../config/db';
+import logger from '../utils/logger';
 
 export const FlightController = {
   // POST /api/v1/flights/search
@@ -68,15 +70,67 @@ export const FlightController = {
       if (!offerId || !passengers?.length) {
         throw new AppError('offerId and passengers are required', 400);
       }
-      const order = await duffelService.createOrder({ offerId, passengers });
+
+      const { order, offer } = await duffelService.createOrder({ offerId, passengers });
+
+      // ── Save to DB (non-blocking — don't fail booking if DB fails) ──
+      const userId = (req as any).user?.id;
+      if (userId) {
+        try {
+          const slices = (order as any).slices || [];
+          const firstSlice = slices[0];
+          const segs = firstSlice?.segments || [];
+          const firstSeg = segs[0];
+          const lastSeg = segs[segs.length - 1];
+
+          await prisma.duffelOrder.create({
+            data: {
+              userId,
+              duffelOrderId: order.id,
+              bookingReference: (order as any).booking_reference || '',
+              origin: firstSeg?.origin?.iata_code || '',
+              destination: lastSeg?.destination?.iata_code || '',
+              departureDate: firstSeg?.departing_at?.substring(0, 10) || '',
+              totalAmount: parseFloat((order as any).total_amount || offer.total_amount),
+              currency: (order as any).total_currency || offer.total_currency,
+              passengerCount: passengers.length,
+              cabinClass: 'economy',
+              airlineName: (order as any).owner?.name || offer.owner?.name || null,
+              status: 'CONFIRMED',
+            },
+          });
+          logger.info(`DuffelOrder saved to DB for user ${userId}`);
+        } catch (dbErr: any) {
+          logger.error(`Failed to save DuffelOrder to DB: ${dbErr.message}`);
+          // Don't throw — booking is confirmed, DB save is best-effort
+        }
+      }
+
       res.status(201).json({ success: true, data: order });
     } catch (err: any) {
-      // Surface Duffel error message to frontend instead of swallowing as 500
       if (!(err instanceof AppError)) {
         next(new AppError(err.message || 'Booking failed. Please try again.', err.statusCode || 422));
       } else {
         next(err);
       }
+    }
+  },
+
+  // GET /api/v1/flights/my-bookings  (requires auth)
+  async getMyBookings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) throw new AppError('Authentication required', 401);
+
+      const bookings = await prisma.duffelOrder.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json({ success: true, data: bookings });
+    } catch (err: any) {
+      if (!(err instanceof AppError)) next(new AppError(err.message || 'Failed to fetch bookings', 500));
+      else next(err);
     }
   },
 

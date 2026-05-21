@@ -62,6 +62,7 @@ model User {
   notifications      Notification[]
   supportTickets     SupportTicket[]
   auditLogs          AuditLog[]
+  duffelOrders       DuffelOrder[]
   
   @@map("users")
 }
@@ -418,4 +419,25 @@ model TicketMessage {
   createdAt  DateTime      @default(now())
   
   @@map("ticket_messages")
+}
+
+// Duffel live flight orders — separate from legacy Flight model
+model DuffelOrder {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  duffelOrderId    String   @unique
+  bookingReference String
+  origin           String
+  destination      String
+  departureDate    String
+  totalAmount      Float
+  currency         String   @default("USD")
+  passengerCount   Int      @default(1)
+  cabinClass       String   @default("economy")
+  airlineName      String?
+  status           String   @default("CONFIRMED")
+  createdAt        DateTime @default(now())
+
+  @@map("duffel_orders")
 }
