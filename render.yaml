@@ -9,24 +9,16 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: kemet-postgres
-          property: connectionString
+        sync: false   # Enter your 100% free Neon.tech or Supabase connection string
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: DUFFEL_API_KEY
-        sync: false
+        sync: false   # must be entered manually
       - key: DUFFEL_API_VERSION
         value: v2
       - key: ALLOWED_ORIGINS
         value: https://kemet-flights.vercel.app
       - key: PORT
         value: 5000
-
-databases:
-  - name: kemet-postgres
-    databaseName: kemet_db
-    user: kemet
-    plan: free
