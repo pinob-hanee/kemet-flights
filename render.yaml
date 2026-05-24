@@ -2,6 +2,7 @@ services:
   - type: web
     name: kemet-flights-backend
     runtime: node
+    plan: free
     rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build
     startCommand: npx prisma db push && node dist/index.js
