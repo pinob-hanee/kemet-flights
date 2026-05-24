@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore';
 
 // In production (Vercel), VITE_API_URL points to the Render backend
 // In development, Vite proxy rewrites /api/v1 → localhost:5000/api/v1
-const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const PROD_URL = 'https://kemet-flights-backend.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PROD_URL : '/api/v1');
 
 const api = axios.create({
   baseURL: BASE_URL,
