@@ -3,6 +3,7 @@ import { duffelService } from '../services/duffelService';
 import { AppError } from '../middlewares/errorHandler';
 import { prisma } from '../config/db';
 import logger from '../utils/logger';
+import AIService from '../services/aiService';
 
 export const FlightController = {
   // POST /api/v1/flights/search
@@ -66,7 +67,7 @@ export const FlightController = {
   // POST /api/v1/flights/book  (requires auth)
   async bookFlight(req: Request, res: Response, next: NextFunction) {
     try {
-      const { offerId, passengers } = req.body;
+      const { offerId, passengers, seats } = req.body;
       if (!offerId || !passengers?.length) {
         throw new AppError('offerId and passengers are required', 400);
       }
@@ -97,9 +98,10 @@ export const FlightController = {
               cabinClass: 'economy',
               airlineName: (order as any).owner?.name || offer.owner?.name || null,
               status: 'CONFIRMED',
+              seats: seats ? String(seats) : null,
             },
           });
-          logger.info(`DuffelOrder saved to DB for user ${userId}`);
+          logger.info(`DuffelOrder saved to DB for user ${userId} with seats: ${seats}`);
         } catch (dbErr: any) {
           logger.error(`Failed to save DuffelOrder to DB: ${dbErr.message}`);
           // Don't throw — booking is confirmed, DB save is best-effort
@@ -142,6 +144,56 @@ export const FlightController = {
     } catch (err: any) {
       if (!(err instanceof AppError)) next(new AppError(err.message || 'Order not found', 404));
       else next(err);
+    }
+  },
+
+  // POST /api/v1/flights/my-bookings/:id/itinerary  (requires auth)
+  async generateAndSaveItinerary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) throw new AppError('Authentication required', 401);
+
+      const { id } = req.params;
+      const { pace = 'Balanced', interests = [], durationDays = 5 } = req.body;
+
+      const order = await prisma.duffelOrder.findFirst({
+        where: { id, userId },
+      });
+
+      if (!order) throw new AppError('Booking not found', 404);
+
+      // Generate the itinerary using our rich AI service
+      const dest = order.destination || 'Cairo';
+      const itinerary = await AIService.generateItinerary(dest, Number(durationDays), pace, interests);
+
+      // Save to database
+      const updated = await prisma.duffelOrder.update({
+        where: { id },
+        data: { itinerary: itinerary },
+      });
+
+      res.json({ success: true, data: updated.itinerary });
+    } catch (err: any) {
+      next(err);
+    }
+  },
+
+  // GET /api/v1/flights/my-bookings/:id/itinerary  (requires auth)
+  async getItinerary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) throw new AppError('Authentication required', 401);
+
+      const { id } = req.params;
+      const order = await prisma.duffelOrder.findFirst({
+        where: { id, userId },
+      });
+
+      if (!order) throw new AppError('Booking not found', 404);
+
+      res.json({ success: true, data: order.itinerary });
+    } catch (err: any) {
+      next(err);
     }
   },
 };

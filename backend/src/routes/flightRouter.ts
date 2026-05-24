@@ -15,4 +15,8 @@ router.post('/book', authenticate, FlightController.bookFlight);
 router.get('/my-bookings', authenticate, FlightController.getMyBookings);
 router.get('/orders/:id', authenticate, FlightController.getOrder);
 
+// AI Travel Scroll Itineraries
+router.post('/my-bookings/:id/itinerary', authenticate, FlightController.generateAndSaveItinerary);
+router.get('/my-bookings/:id/itinerary', authenticate, FlightController.getItinerary);
+
 export default router;

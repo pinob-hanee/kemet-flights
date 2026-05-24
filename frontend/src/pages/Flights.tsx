@@ -220,10 +220,76 @@ function FlightCard({ offer, onSelect }: { offer: any; onSelect: () => void }) {
 }
 
 export default function Flights({ onNavigate }: FlightsProps) {
-  const { offerRequestId, offers, flightSearch, setOffers, setSelectedOffer } = useStore();
+  const { offerRequestId, offers, flightSearch, setOffers, setSelectedOffer, setFlightSearch, setOfferRequestId } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState<'price' | 'duration'>('price');
+
+  const dateBars = useMemo(() => {
+    const baseDateStr = flightSearch.departureDate;
+    if (!baseDateStr) return [];
+    
+    const dates = [];
+    const baseDate = new Date(baseDateStr);
+    
+    // Base simulated price matching lowest ticket fare or fallback
+    const basePrice = offers.length > 0 
+      ? Math.min(...offers.map(o => parseFloat(o.total_amount))) 
+      : 350;
+
+    for (let offset = -3; offset <= 3; offset++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + offset);
+      const dateStr = d.toISOString().split('T')[0];
+      
+      const seed = d.getDate();
+      const randomFactor = 0.8 + ((seed % 7) / 10);
+      const simPrice = offset === 0 && offers.length > 0
+        ? basePrice
+        : Math.round(basePrice * randomFactor);
+        
+      dates.push({
+        date: dateStr,
+        label: d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
+        price: simPrice,
+        isActive: dateStr === baseDateStr
+      });
+    }
+    
+    return dates;
+  }, [flightSearch.departureDate, offers]);
+
+  const handleDateClick = async (newDate: string) => {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    
+    setFlightSearch({ departureDate: newDate });
+    
+    try {
+      const searchRes = await api.post('/flights/search', {
+        origin: flightSearch.origin?.iata_code,
+        destination: flightSearch.destination?.iata_code,
+        departureDate: newDate,
+        returnDate: flightSearch.returnDate || undefined,
+        adults: flightSearch.passengers.adults,
+        children: flightSearch.passengers.children,
+        infants: flightSearch.passengers.infants,
+        cabinClass: flightSearch.cabinClass,
+      });
+      
+      const requestData = searchRes.data.data;
+      if (requestData?.id) {
+        setOfferRequestId(requestData.id);
+        const offersRes = await api.get(`/flights/offers?offer_request_id=${requestData.id}`);
+        setOffers(offersRes.data.data || []);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error?.message || 'Search failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
   const [filterStops, setFilterStops] = useState<number | null>(null);
   const [filterAirline, setFilterAirline] = useState<string | null>(null);
   const [filterMaxPrice, setFilterMaxPrice] = useState<number>(999999);
@@ -413,6 +479,69 @@ export default function Flights({ onNavigate }: FlightsProps) {
 
           {/* Results */}
           <div className="flex-1 min-w-0">
+            {/* ── Price Trend Analytics Bar Chart ── */}
+            {!error && dateBars.length > 0 && (
+              <div className="glass-panel p-5 rounded-xl border border-gold/15 mb-6 text-left animate-fadeIn">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <span className="text-[10px] text-gold uppercase tracking-widest font-bold">Fare Analytics</span>
+                    <h4 className="text-sm font-serif font-bold text-sand-light mt-0.5">Surrounding Date Fares</h4>
+                  </div>
+                  <span className="text-[9px] text-sand-dark/50 font-mono">Click a bar to explore alternative fares</span>
+                </div>
+
+                <div className="flex items-end justify-between gap-1.5 h-28 pt-4 px-2 relative">
+                  {dateBars.map((bar) => {
+                    const maxBarPrice = Math.max(...dateBars.map(b => b.price));
+                    const minBarPrice = Math.min(...dateBars.map(b => b.price));
+                    const heightPct = maxBarPrice === minBarPrice 
+                      ? 50 
+                      : 30 + ((bar.price - minBarPrice) / (maxBarPrice - minBarPrice)) * 60;
+
+                    return (
+                      <button
+                        key={bar.date}
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleDateClick(bar.date)}
+                        className="flex-1 flex flex-col items-center group focus:outline-none cursor-pointer relative"
+                      >
+                        {/* Tooltip on hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -translate-y-9 bg-nile-blue border border-gold/45 text-[9px] font-mono text-gold px-2 py-0.5 rounded shadow-gold pointer-events-none z-10 whitespace-nowrap">
+                          USD {bar.price}
+                        </div>
+
+                        {/* Dynamic Bar */}
+                        <div className="w-full relative rounded-t overflow-hidden transition-all duration-300">
+                          <div 
+                            className={`w-full rounded-t transition-all ${
+                              bar.isActive 
+                                ? 'bg-gradient-to-t from-gold-dark via-gold to-gold-light shadow-gold' 
+                                : 'bg-gradient-to-t from-nile-light to-gold/20 hover:to-gold/40'
+                            }`}
+                            style={{ height: `${heightPct}px` }}
+                          />
+                        </div>
+
+                        {/* Active royal crown dot */}
+                        {bar.isActive && (
+                          <div className="w-1 h-1 rounded-full bg-gold animate-ping mt-1 absolute -translate-y-2.5" />
+                        )}
+
+                        {/* Date label */}
+                        <span className={`text-[8px] font-mono mt-1.5 shrink-0 ${bar.isActive ? 'text-gold font-bold' : 'text-sand-dark/50'}`}>
+                          {bar.label}
+                        </span>
+                        <span className={`text-[8px] font-mono shrink-0 mt-0.5 ${bar.isActive ? 'text-gold font-bold' : 'text-sand-dark/40'}`}>
+                          ${bar.price}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Sort + count */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div className="text-sand-dark/70 text-sm">

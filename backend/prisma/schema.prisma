@@ -437,6 +437,8 @@ model DuffelOrder {
   cabinClass       String   @default("economy")
   airlineName      String?
   status           String   @default("CONFIRMED")
+  seats            String?  // Comma-separated seat selections, e.g. "1A, 1B"
+  itinerary        Json?    // Cached Egyptologist travel scroll
   createdAt        DateTime @default(now())
 
   @@map("duffel_orders")

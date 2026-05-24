@@ -75,6 +75,27 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
   const [confirmed, setConfirmed] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
   const [orderId, setOrderId] = useState('');
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+
+  const getSeatCost = (seat: string) => {
+    const row = parseInt(seat);
+    if (isNaN(row)) return 0;
+    if (row <= 2) return 150;
+    if (row <= 4) return 50;
+    return 0;
+  };
+
+  const getSeatClassLabel = (seat: string) => {
+    const row = parseInt(seat);
+    if (isNaN(row)) return 'Scribe Standard';
+    if (row <= 2) return 'Pharaoh First Class';
+    if (row <= 4) return 'Horus Extra Legroom';
+    return 'Scribe Standard';
+  };
+
+  const seatsCostTotal = selectedSeats.reduce((sum, seat) => sum + getSeatCost(seat), 0);
+  const basePriceVal = parseFloat(selectedOffer?.total_amount || '0');
+  const grandTotal = basePriceVal + seatsCostTotal;
 
   if (!selectedOffer) {
     return (
@@ -172,6 +193,7 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
       const res = await api.post('/flights/book', {
         offerId: selectedOffer.id,
         passengers: bookingPassengers,
+        seats: selectedSeats.length > 0 ? selectedSeats.join(', ') : null,
       });
 
       const data = res.data.data;
@@ -228,6 +250,19 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
               </div>
             </div>
 
+            {/* Selected Seats Assignment */}
+            {selectedSeats.length > 0 && (
+              <div className="bg-nile/60 border border-gold/20 rounded-xl px-5 py-3 mb-6 text-left flex justify-between items-center animate-fadeIn">
+                <div>
+                  <div className="text-[10px] text-gold/50 uppercase tracking-widest font-semibold">Assigned Seats</div>
+                  <div className="text-xs text-sand-dark mt-0.5">Pharaonic Seating Privilege</div>
+                </div>
+                <div className="text-lg font-mono font-bold text-gold bg-gold/10 border border-gold/30 px-4 py-1.5 rounded-lg shadow-gold">
+                  {selectedSeats.join(', ')}
+                </div>
+              </div>
+            )}
+
             {/* Flight summary */}
             <div className="bg-nile/50 border border-gold/10 rounded-xl p-4 mb-7 flex items-center gap-4 flex-wrap">
               <div className="text-center">
@@ -246,7 +281,7 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
               </div>
               <div className="ml-auto text-right shrink-0">
                 <div className="text-xl font-bold text-gold">
-                  {selectedOffer.total_currency} {parseFloat(selectedOffer.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {selectedOffer.total_currency} {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
                 <div className="text-xs text-emerald-400 font-semibold">Paid ✓</div>
               </div>
@@ -410,9 +445,160 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
             </div>
           ))}
 
+          {/* ── Visual Seat Selector ── */}
+          <div className="glass-panel p-6 rounded-xl border border-gold/15 mb-8 animate-fadeIn text-left">
+            <div className="flex items-center justify-between mb-4 border-b border-gold/10 pb-4">
+              <div>
+                <h3 className="text-gold font-serif text-lg">Select Sacred Cabin Seats</h3>
+                <p className="text-xs text-sand-dark/50 mt-1">
+                  Choose your seating scroll for all {totalPax} passenger{totalPax > 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-gold/60 uppercase tracking-widest block font-sans">Seats Selected</span>
+                <span className="text-sm font-bold text-sand-light font-mono">
+                  {selectedSeats.length} / {totalPax}
+                </span>
+              </div>
+            </div>
+
+            {/* Seat legend */}
+            <div className="grid grid-cols-3 gap-3 text-xs mb-8 bg-nile/40 p-3 rounded-lg border border-gold/5 text-center">
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded bg-gold-dark/20 border border-gold/40 flex items-center justify-center text-gold">👑</div>
+                <span className="font-semibold text-gold font-serif text-[10px]">Pharaoh Elite</span>
+                <span className="text-[9px] text-sand-dark/40 font-mono">+$150.00</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded bg-amber-950/20 border border-amber-500/30 flex items-center justify-center text-amber-400">🪽</div>
+                <span className="font-semibold text-amber-400 font-serif text-[10px]">Horus Wing</span>
+                <span className="text-[9px] text-sand-dark/40 font-mono">+$50.00</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded bg-nile border border-gold/20 flex items-center justify-center text-sand-light">💺</div>
+                <span className="font-semibold text-sand-light font-serif text-[10px]">Scribe Comfort</span>
+                <span className="text-[9px] text-sand-dark/40 font-mono">+$0.00</span>
+              </div>
+            </div>
+
+            {/* Interactive cabin shell */}
+            <div className="max-w-xs mx-auto bg-nile-blue/40 border border-gold/10 rounded-t-[100px] rounded-b-2xl pt-16 pb-8 px-6 shadow-inner relative">
+              {/* Nose cone marker */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 text-[9px] text-gold/30 uppercase tracking-[0.2em] font-serif">Cockpit</div>
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-gold/20 to-transparent absolute top-10 left-0" />
+
+              {/* Cabin grid */}
+              <div className="space-y-3">
+                {Array.from({ length: 8 }).map((_, rIdx) => {
+                  const rowNum = rIdx + 1;
+                  const isPharaoh = rowNum <= 2;
+                  const isHorus = rowNum === 3 || rowNum === 4;
+                  
+                  const handleSeatClick = (seatCode: string) => {
+                    if (selectedSeats.includes(seatCode)) {
+                      setSelectedSeats(prev => prev.filter(s => s !== seatCode));
+                    } else {
+                      if (selectedSeats.length < totalPax) {
+                        setSelectedSeats(prev => [...prev, seatCode]);
+                      } else {
+                        setSelectedSeats(prev => [...prev.slice(1), seatCode]);
+                      }
+                    }
+                  };
+
+                  return (
+                    <div key={rowNum} className="flex items-center justify-between gap-1.5">
+                      {/* Left seats (A, B) */}
+                      <div className="flex gap-2 flex-1 justify-end">
+                        {['A', 'B'].map((col) => {
+                          const seatCode = `${rowNum}${col}`;
+                          const isSelected = selectedSeats.includes(seatCode);
+                          
+                          let seatStyle = "w-9 h-9 rounded text-xs font-semibold flex items-center justify-center transition-all cursor-pointer select-none ";
+                          
+                          if (isSelected) {
+                            seatStyle += "bg-gradient-to-br from-gold-light via-gold to-gold-dark text-nile border border-gold shadow-gold scale-105";
+                          } else if (isPharaoh) {
+                            seatStyle += "bg-gold-dark/10 hover:bg-gold-dark/30 border border-gold/40 text-gold";
+                          } else if (isHorus) {
+                            seatStyle += "bg-amber-950/20 hover:bg-amber-900/30 border border-amber-600/30 text-amber-400";
+                          } else {
+                            seatStyle += "bg-nile hover:bg-nile-light border border-gold/10 text-sand-dark";
+                          }
+
+                          return (
+                            <button
+                              key={seatCode}
+                              type="button"
+                              onClick={() => handleSeatClick(seatCode)}
+                              className={seatStyle}
+                            >
+                              {isSelected ? "✓" : isPharaoh ? "👑" : isHorus ? "🪽" : col}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Row Number */}
+                      <div className="w-6 text-center text-[10px] font-mono text-gold/30 shrink-0 font-bold">
+                        {rowNum}
+                      </div>
+
+                      {/* Right seats (C, D) */}
+                      <div className="flex gap-2 flex-1 justify-start">
+                        {['C', 'D'].map((col) => {
+                          const seatCode = `${rowNum}${col}`;
+                          const isSelected = selectedSeats.includes(seatCode);
+                          
+                          let seatStyle = "w-9 h-9 rounded text-xs font-semibold flex items-center justify-center transition-all cursor-pointer select-none ";
+                          
+                          if (isSelected) {
+                            seatStyle += "bg-gradient-to-br from-gold-light via-gold to-gold-dark text-nile border border-gold shadow-gold scale-105";
+                          } else if (isPharaoh) {
+                            seatStyle += "bg-gold-dark/10 hover:bg-gold-dark/30 border border-gold/40 text-gold";
+                          } else if (isHorus) {
+                            seatStyle += "bg-amber-950/20 hover:bg-amber-900/30 border border-amber-600/30 text-amber-400";
+                          } else {
+                            seatStyle += "bg-nile hover:bg-nile-light border border-gold/10 text-sand-dark";
+                          }
+
+                          return (
+                            <button
+                              key={seatCode}
+                              type="button"
+                              onClick={() => handleSeatClick(seatCode)}
+                              className={seatStyle}
+                            >
+                              {isSelected ? "✓" : isPharaoh ? "👑" : isHorus ? "🪽" : col}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selection summary */}
+            {selectedSeats.length > 0 && (
+              <div className="mt-6 border-t border-gold/10 pt-4 space-y-2 text-xs">
+                <h4 className="text-gold font-serif">Selected Assignments:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedSeats.map((seat, sIdx) => (
+                    <div key={seat} className="flex justify-between bg-nile-blue/20 border border-gold/10 p-2 rounded">
+                      <span className="text-sand-dark">Passenger {sIdx + 1}: <strong className="text-sand-light">{seat}</strong></span>
+                      <span className="text-gold font-mono">{getSeatClassLabel(seat)} (+${getSeatCost(seat)})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Error box */}
           {error && (
-            <div className="mb-5 px-4 py-3 rounded-lg bg-rose-950/40 border border-rose-800/60 text-rose-400 text-sm flex items-start gap-2">
+            <div className="mb-5 px-4 py-3 rounded-lg bg-rose-950/40 border border-rose-800/60 text-rose-400 text-sm flex items-start gap-2 text-left">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <div>
                 <p>{error}</p>
@@ -449,7 +635,7 @@ export default function Checkout({ onNavigate, onOpenAuth }: CheckoutProps) {
             ) : (
               <>
                 <ChevronRight size={20} />
-                {user ? `Confirm Booking · ${selectedOffer.total_currency} ${parseFloat(selectedOffer.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Sign In to Book'}
+                {user ? `Confirm Booking · ${selectedOffer.total_currency} ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Sign In to Book'}
               </>
             )}
           </button>
