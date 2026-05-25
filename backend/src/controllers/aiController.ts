@@ -56,3 +56,52 @@ export class AIController {
   }
 }
 export default AIController;
+
+// ─── Concierge VIP Service Endpoint ───────────────────────────────────────────
+
+export const handleConciergeService = async (req: Request, res: Response) => {
+  const { service } = req.body;
+
+  const services: Record<string, { name: string; price: number; description: string }> = {
+    helicopter: {
+      name: 'Private Helicopter Charter',
+      price: 450,
+      description: 'A royal aerial convoy from Cairo to the sacred Giza plateau, soaring above the ancient sands as the Pharaohs once surveyed their dominions from the heavens.'
+    },
+    balloon: {
+      name: 'Sunrise Hot Air Balloon over Valley of the Kings',
+      price: 250,
+      description: 'As Ra himself ascends from the eastern horizon, your gilded balloon rises above the Valley of the Kings. The tombs of the great pharaohs stretch below in golden splendor.'
+    },
+    butler: {
+      name: 'VIP Airport Butler Fast-Track Escort',
+      price: 150,
+      description: 'A personal royal escort navigates you through all ceremonial gates with the authority of a high priest, ensuring your passage is swift and dignified.'
+    },
+    templeDining: {
+      name: 'Private Candlelit Dining inside Philae Temple',
+      price: 600,
+      description: 'Dine as an ancient deity within the sacred halls of Philae Temple. Your personal chef presents a curated feast of rare Egyptian delicacies by candlelight as hieroglyphs watch in silent blessing.'
+    }
+  };
+
+  const selected = services[service];
+  if (!selected) {
+    return res.status(400).json({ success: false, error: { message: 'Unknown royal service requested.' } });
+  }
+
+  // Simulated transaction ID
+  const transactionId = `KMT-VIP-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+  return res.json({
+    success: true,
+    data: {
+      transactionId,
+      service: selected.name,
+      price: selected.price,
+      description: selected.description,
+      message: `By royal decree, your ${selected.name} has been arranged. May your journey through the kingdom of Kemet be blessed by the gods.`,
+      confirmedAt: new Date().toISOString()
+    }
+  });
+};

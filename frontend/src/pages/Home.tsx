@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Plane, ArrowLeftRight, Search, ChevronDown, Calendar, Users } from 'lucide-react';
 import { useStore, Airport } from '../store/useStore';
 import api from '../lib/api';
+import EgyptRouteMap from '../components/EgyptRouteMap';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
@@ -468,6 +469,29 @@ export default function Home({ onNavigate }: HomeProps) {
               )}
             </button>
           </form>
+        </div>
+
+        {/* ── Egypt Route Map — Desktop Only ── */}
+        <div className="hidden lg:flex items-start gap-8 mt-8 glass-panel p-6 rounded-2xl border border-gold/15 max-w-5xl mx-auto w-full">
+          <div className="flex-1">
+            <div className="divider-pharaoh mb-4 text-gold/40">Sacred Kingdom Routes</div>
+            <EgyptRouteMap
+              onCitySelect={(origin, dest) => {
+                console.log('Selected route:', origin, '->', dest);
+              }}
+            />
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <h3 className="text-gold-glint font-serif text-xl mb-2">Explore Egypt's Royal Hubs</h3>
+            <p className="text-sand-dark/60 text-sm leading-relaxed mb-4">
+              Click any sacred city on the map to set your flight origin. Click a second city to auto-select your route and begin your pharaonic journey.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {['Cairo 👑', 'Luxor 🏺', 'Aswan 🛶', 'Siwa 🌴', 'Hurghada 🏖️', 'Alexandria 🏛️'].map(city => (
+                <div key={city} className="text-xs text-gold/60 bg-gold/5 border border-gold/10 rounded px-2 py-1">{city}</div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

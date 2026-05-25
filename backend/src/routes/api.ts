@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { TravelController } from '../controllers/travelController';
 import { BookingController } from '../controllers/bookingController';
-import { AIController } from '../controllers/aiController';
+import { AIController, handleConciergeService } from '../controllers/aiController';
 import { authenticate, authorize } from '../middlewares/auth';
 import { validateRequest } from '../middlewares/validation';
 import { z } from 'zod';
@@ -407,5 +407,31 @@ router.post('/ai/itinerary', AIController.generateItinerary);
  *         description: AI response returned
  */
 router.post('/ai/chat', AIController.chat);
+
+/**
+ * @swagger
+ * /ai/concierge-service:
+ *   post:
+ *     summary: Book a VIP concierge experience (helicopter, balloon, butler, temple dining)
+ *     tags: [AI Assistant]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [service]
+ *             properties:
+ *               service:
+ *                 type: string
+ *                 enum: [helicopter, balloon, butler, templeDining]
+ *                 example: balloon
+ *     responses:
+ *       200:
+ *         description: VIP concierge service confirmed by royal decree
+ *       400:
+ *         description: Unknown service requested
+ */
+router.post('/ai/concierge-service', handleConciergeService);
 
 export default router;

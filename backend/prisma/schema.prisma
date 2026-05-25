@@ -439,6 +439,10 @@ model DuffelOrder {
   status           String   @default("CONFIRMED")
   seats            String?  // Comma-separated seat selections, e.g. "1A, 1B"
   itinerary        Json?    // Cached Egyptologist travel scroll
+  passengersData   Json?    // Array of passenger objects with name, meal, seat
+  paymobPaymentId  String?  // Paymob transaction ID
+  paymobSource     String?  // e.g., "CARD", "VODAFONE_CASH", "ORANGE_CASH", "VALU", "WALLET"
+  mealSurcharge    Float    @default(0) // Total added from meal selections
   createdAt        DateTime @default(now())
 
   @@map("duffel_orders")

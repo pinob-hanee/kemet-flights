@@ -67,9 +67,24 @@ export const FlightController = {
   // POST /api/v1/flights/book  (requires auth)
   async bookFlight(req: Request, res: Response, next: NextFunction) {
     try {
-      const { offerId, passengers, seats } = req.body;
+      const { offerId, passengers, seats, passengersData, paymobPaymentId, paymobSource } = req.body;
       if (!offerId || !passengers?.length) {
         throw new AppError('offerId and passengers are required', 400);
+      }
+
+      // ── Calculate meal surcharge from passengersData ──────────────────────
+      const mealPrices: Record<string, number> = {
+        PHARAOH_BANQUET: 75,
+        NILE_HARVEST: 45,
+        ALEXANDRIAN_CATCH: 55,
+        SCRIBE_PROVISIONS: 25,
+      };
+      let mealSurcharge = 0;
+      if (Array.isArray(passengersData)) {
+        for (const pax of passengersData) {
+          const meal: string = (pax.meal || 'SCRIBE_PROVISIONS').toUpperCase();
+          mealSurcharge += mealPrices[meal] ?? mealPrices['SCRIBE_PROVISIONS'];
+        }
       }
 
       const { order, offer } = await duffelService.createOrder({ offerId, passengers });
@@ -99,9 +114,13 @@ export const FlightController = {
               airlineName: (order as any).owner?.name || offer.owner?.name || null,
               status: 'CONFIRMED',
               seats: seats ? String(seats) : null,
+              passengersData: passengersData ?? undefined,
+              paymobPaymentId: paymobPaymentId ?? null,
+              paymobSource: paymobSource ?? null,
+              mealSurcharge,
             },
           });
-          logger.info(`DuffelOrder saved to DB for user ${userId} with seats: ${seats}`);
+          logger.info(`DuffelOrder saved to DB for user ${userId} with seats: ${seats}, mealSurcharge: $${mealSurcharge}`);
         } catch (dbErr: any) {
           logger.error(`Failed to save DuffelOrder to DB: ${dbErr.message}`);
           // Don't throw — booking is confirmed, DB save is best-effort
